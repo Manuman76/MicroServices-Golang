@@ -1,0 +1,39 @@
+# Build artifacts
+bin/
+obj/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test artifacts
+_test/
+*_test.go
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Go modules
+go.mod
+go.sum
+go.work
+go.work.sum
+
+# Local config
+.local/
+.env
+config.local.json
+
+# Logs
+*.log
+
+# mongo db-data
+project/db-data/
