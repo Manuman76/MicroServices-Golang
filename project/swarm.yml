@@ -4,10 +4,31 @@ version: "3"
 # have to change the image: <name> part to whatever your image names are
 
 services:
-  broker-service:
-    image: mlegault18/broker-service:1.0.0
+  caddy:
+    image: mlegault18/micro-caddy:1.0.0
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.hostname == swarm-worker-1
     ports:
-      - "8080:80"
+      - "80:80"
+      - "443:443"
+    volumes:
+      - caddy_data:/data
+      - caddy_config:/config
+
+  front-end:
+    image: mlegault18/front-end:1.0.2
+    deploy:
+      mode: replicated
+      replicas: 1
+    environment:
+      BROKER_URL: "http://backend"
+
+  broker-service:
+    image: mlegault18/broker-service:1.0.1
     deploy:
       mode: replicated
       replicas: 1
@@ -50,39 +71,58 @@ services:
   rabbitmq:
     image: "rabbitmq:3.9-alpine"
     deploy:
-      mode: global
+      mode: replicated
+      replicas: 1
 
   mailhog:
     image: "mailhog/mailhog:latest"
     ports:
       - "8025:8025"
     deploy:
-      mode: global
+      mode: replicated
+      replicas: 1
 
   mongo:
     image: "mongo:4.2.17-bionic"
     ports:
       - "27017:27017"
     deploy:
-      mode: global
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.hostname == swarm-worker-1
     environment:
       MONGO_INITDB_DATABASE: logs
       MONGO_INITDB_ROOT_USERNAME: admin
       MONGO_INITDB_ROOT_PASSWORD: password
     volumes:
-      - ./db-data/mongo/:/data/db
+      - mongo_data:/data/db # Use the volume name here
 
   postgres:
     image: "postgres:14.22"
     ports:
       - "5432:5432"
-    restart: always
+    # Note: 'restart: always' is ignored in Swarm; use restart_policy in deploy instead
     deploy:
       mode: replicated
       replicas: 1
+      restart_policy:
+        condition: on-failure
+      placement:
+        constraints:
+          - node.hostname == swarm-worker-1
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: password
       POSTGRES_DB: users
+      POSTGRES_HOST_AUTH_METHOD: md5
     volumes:
-      - ./db-data/postgres/:/var/lib/postgresql/data/
+      - postgres_data:/var/lib/postgresql/data # Use the volume name here
+
+volumes:
+  mongo_data:
+  postgres_data:
+  caddy_data:
+    external: true
+  caddy_config:

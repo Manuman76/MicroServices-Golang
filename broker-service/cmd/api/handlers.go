@@ -7,6 +7,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"net/rpc"
 	"time"
@@ -116,12 +117,24 @@ func (app *Config) authenticate(w http.ResponseWriter, a AuthPayload) {
 	}
 
 	client := &http.Client{}
+	// response, err := client.Do(request)
+	// if err != nil {
+	// 	app.errorJSON(w, err)
+	// 	return
+	// }
+	// defer response.Body.Close()
+
 	response, err := client.Do(request)
 	if err != nil {
+		// This will tell us if it's a DNS issue, Connection Refused, or Timeout
+		fmt.Println("NETWORK ERROR:", err)
 		app.errorJSON(w, err)
 		return
 	}
 	defer response.Body.Close()
+
+	// Print the status code to the logs so we can see it in 'docker service logs'
+	fmt.Println("AUTH SERVICE RESPONSE CODE:", response.StatusCode)
 
 	// make sure we get back the correct status code
 	if response.StatusCode == http.StatusUnauthorized {
